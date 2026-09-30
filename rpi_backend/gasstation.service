@@ -1,0 +1,31 @@
+[Unit]
+Description=Gasoline Station Flask API (MySQL + TM1637 GPIO)
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+# Change 'pi' to your actual username if different.
+User=pi
+WorkingDirectory=/home/pi/gasoline_station/rpi_backend
+ExecStart=/home/pi/gasoline_station/rpi_backend/venv/bin/gunicorn -w 1 -b 0.0.0.0:5000 app:app
+Restart=on-failure
+RestartSec=5
+
+# Uncomment and edit if you prefer keeping DB credentials out of config.py:
+# Environment=GASSTATION_DB_PASSWORD=your_password_here
+
+[Install]
+WantedBy=multi-user.target
+
+# --- Setup ---------------------------------------------------------------
+# 1) cd ~/gasoline_station/rpi_backend
+# 2) python3 -m venv venv
+# 3) source venv/bin/activate
+# 4) pip install -r requirements.txt
+# 5) mysql -u root -p < schema.sql
+# 6) sudo cp gasstation.service /etc/systemd/system/gasstation.service
+# 7) sudo systemctl daemon-reload
+# 8) sudo systemctl enable --now gasstation.service
+# 9) sudo systemctl status gasstation.service   (check it's running)
+# Logs:  sudo journalctl -u gasstation.service -f

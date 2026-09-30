@@ -1,0 +1,50 @@
+workflows:
+  ios-unsigned-ipa:
+    name: iOS Unsigned IPA (for AltStore sideload)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+
+      - name: Build unsigned iOS app
+        script: |
+          # --no-codesign skips code signing entirely, since AltStore
+          # re-signs the app itself at install time using your own Apple
+          # ID. Trying to sign here would require a paid developer
+          # account's distribution certificate, which a free account
+          # doesn't have.
+          flutter build ios --release --no-codesign
+
+      - name: Package unsigned .app into a sideload-ready .ipa
+        script: |
+          # flutter build ios --no-codesign only produces a .app bundle,
+          # not an .ipa — Flutter's normal .ipa export path goes through
+          # an Xcode archive, which requires signing. AltStore (and
+          # sideloading in general) just needs a .ipa, which is simply a
+          # zip of a Payload/ folder containing the .app, so we build
+          # that by hand here.
+          set -e
+          cd build/ios/iphoneos
+          mkdir -p Payload
+          cp -r Runner.app Payload/
+          zip -r gasoline_station_app.ipa Payload
+          cd ../../..
+          mkdir -p build/ios/ipa
+          mv build/ios/iphoneos/gasoline_station_app.ipa build/ios/ipa/
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+
+    publishing:
+      email:
+        recipients:
+          - thesiscpe837@gmail.com
+        notify:
+          success: true
+          failure: true
